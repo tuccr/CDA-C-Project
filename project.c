@@ -7,7 +7,6 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
     unsigned invA = ~A + 1;
     unsigned invB = ~B + 1;
-    unsigned sign = (1 << 31);
     //~X + 1 will work no matter if X is actually positive or negative
 
     switch(ALUControl) {
@@ -22,7 +21,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
             else{*ALUresult = 0; *Zero = 1;}
             break;
         case '011': //slt unsigned
-           if(A < B) {*ALUresult = 1; *Zero = 0;}
+           if((A << 1) < (B << 1)) {*ALUresult = 1; *Zero = 0;}
            else {*ALUresult = 0; *Zero = 1;}
            break; 
         case '100': //A AND B
@@ -42,6 +41,10 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
            break;
     }
 }
+
+
+//_____________________________________________________________________________________________________________________________________________________________________
+
 
 /* instruction fetch */
 /* 10 Points */
