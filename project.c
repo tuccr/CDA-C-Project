@@ -10,30 +10,30 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
     //~X + 1 will work no matter if X is actually positive or negative
 
     switch(ALUControl) {
-        case '000': //add
+        case 0: //add; 000
            *ALUresult = A + B;
            break;
-        case '001': //subtract
+        case 1: //subtract; 001
            *ALUresult = A + invB;
            break;
-        case '010': //if A < B, Z = 1; otherwise, Z = 0
+        case 2: //if A < B, Z = 1; otherwise, Z = 0; 010
             if(A + invB < 0) {*ALUresult = 1; *Zero = 0;}
             else{*ALUresult = 0; *Zero = 1;}
             break;
-        case '011': //slt unsigned
+        case 3: //slt unsigned; 011
            if((A << 1) < (B << 1)) {*ALUresult = 1; *Zero = 0;}
            else {*ALUresult = 0; *Zero = 1;}
            break; 
-        case '100': //A AND B
+        case 4: //A AND B; 100
            *ALUresult = (A & B);
            break;
-        case '101': //A OR B
+        case 5: //A OR B; 101
            *ALUresult = (A | B);
            break;
-        case '110': //shift B left by 16 bits
+        case 6: //shift B left by 16 bits; 110
            *ALUresult = (B << 16);
            break;
-        case '111': //NOT A
+        case 7: //NOT A; 111
            *ALUresult = ~A;
            break;
         default:
