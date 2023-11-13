@@ -5,7 +5,43 @@
 /* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
+    unsigned invA = ~A - 1;
+    unsigned invB = ~B - 1;
+    //maybe check A and B against (1 << 7) or until 1 is in MSB place
+    switch(ALUControl) {
+        case '000': //add
+            *ALUresult = A + B;
+            break;
+        case '001': //subtract
+            *ALUresult = A + (~B + 1);
+            break;
+        case '010': //if A < B, Z = 1; otherwise, Z = 0
+            
+            //DO NOT KEEP IT LIKE THIS
 
+            if(A < B) {*ALUresult = 1; *Zero = 0;}
+            else {*ALUresult = 0; *Zero = 1;}
+            break;
+        case '011': //slt unsigned
+            if(A < B) {*ALUresult = 1; *Zero = 0;}
+            else {*ALUresult = 0; *Zero = 1;}
+            break; 
+        case '100': //A AND B
+            *ALUresult = (A & B);
+            break;
+        case '101': //A OR B
+            *ALUresult = (A | B);
+            break;
+        case '110': //shift B left by 16 bits
+            *ALUresult = (B << 16);
+            break;
+        case '111': //NOT A
+            *ALUresult = ~A;
+            break;
+        default:
+            *ALUresult = 0;
+            break;
+    }
 }
 
 /* instruction fetch */
