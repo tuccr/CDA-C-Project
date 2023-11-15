@@ -50,15 +50,28 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-
+    
 }
 
 
 /* instruction partition */
 /* 10 Points */
-void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
+void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1, unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
+    // see projectDetails.pptx
 
+    //based on Step() contents in spimcore.c this needs to take instruction and simply copy parts into each thing (tear it to pieces)
+
+    int n = 0; //placeholder for sake of example, change to actual number
+
+    // NOTE: instead of shifting, just get binary number equal to all 1s in the respective position
+    *op = (instruction & n);
+    *r1 = (instruction & n);
+    *r2 = (instruction & n);
+    *r3 = (instruction & n);
+    *offset = (instruction & n);
+    *funct = (instruction & 63); // 63 is 111111
+    *jsec = (instruction & 33554431); // this number is 26 ones
 }
 
 
