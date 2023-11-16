@@ -93,34 +93,35 @@ int instruction_decode(unsigned op,struct_controls *controls)
 
     switch(op) {
         case 0: //R-type instruction, 000000
-            controls->RegDst = 2;
-            controls->Jump = 2;
-            controls->Branch = 2;
-            controls->MemRead = 2;
-            controls->MemtoReg = 2;
-            controls->ALUOp = 2;
-            controls->MemWrite = 2;
-            controls->ALUSrc = 2;
-            controls->RegWrite = 2;
-            return 0;
-        case 2: //jump, 0b000010
-            controls->RegDst = 0;
+            // filled from r-type pdf
+            controls->RegDst = 1;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b000; // double check this
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
+            controls->RegWrite = 1;
+            return 0;
+        case 2: //jump, 0b000010
+            controls->RegDst = 2;
+            controls->Jump = 1;
+            controls->Branch = 0;
+            controls->MemRead = 1;
+            controls->MemtoReg = 2;
+            controls->ALUOp = 0;
+            controls->MemWrite = 0;
+            controls->ALUSrc = 2;
             controls->RegWrite = 0;
             return 0;
-        case 4: //branch eq, 0b000100
-            controls->RegDst = 0;
+        case 4: //branch on equal, 0b000100
+            controls->RegDst = 2;
             controls->Jump = 0;
-            controls->Branch = 0;
+            controls->Branch = 1;
             controls->MemRead = 0;
-            controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->MemtoReg = 2;
+            controls->ALUOp = 0b001; // needs to be subtraction for comparison
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
@@ -191,26 +192,26 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
-        case 131: //load word, 0b100011
+        case 0b100101: //load word, 0b100011
             controls->RegDst = 0;
+            controls->Jump = 0;
+            controls->Branch = 0;
+            controls->MemRead = 1;
+            controls->MemtoReg = 1;
+            controls->ALUOp = 0b000;
+            controls->MemWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
+            return 0;
+        case 0b101011: //store word, 0b101011
+            controls->RegDst = 2;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
             controls->ALUOp = 0b000;
-            controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
-            return 0;
-        case 163: //store word, 0b101011
-            controls->RegDst = 0;
-            controls->Jump = 0;
-            controls->Branch = 0;
-            controls->MemRead = 0;
-            controls->MemtoReg = 0;
-            controls->ALUOp = 0;
-            controls->MemWrite = 0;
-            controls->ALUSrc = 0;
+            controls->MemWrite = 1;
+            controls->ALUSrc = 1;
             controls->RegWrite = 0;
             return 0;
         default:
