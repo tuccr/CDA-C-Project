@@ -20,7 +20,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
         case 0b001: //subtract; 001
             *ALUresult = A + invB;
             break;
-        case 0b010: //if A < B, Z = 1; otherwise, Z = 0; 010
+        case 0b010: //if A < B, Z = 1, otherwise, Z = 0; 010
             if(A + invB < 0) {*ALUresult = 1; *Zero = 0;}
             else{*ALUresult = 0; *Zero = 1;}
             break;
@@ -62,7 +62,7 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
         return 1;
     }
     else {
-        *instruction = Mem[PC >> 2]; // if this doesn't work try MEM(PC);
+        *instruction = MEM(PC); // if using vscode, hover over MEM(PC) and you'll see what's defined in spimcore.c
         return 0;
     }
 }
@@ -101,15 +101,15 @@ int instruction_decode(unsigned op,struct_controls *controls)
 
     switch(op) {
         case 0: //R-type instruction, 000000
-            controls->RegDst = 2;
-            controls->Jump = 2;
-            controls->Branch = 2;
-            controls->MemRead = 2;
-            controls->MemtoReg = 2;
+            controls->RegDst = 1;
+            controls->Jump = 0;
+            controls->Branch = 0;
+            controls->MemRead = 0;
+            controls->MemtoReg = 0;
             controls->ALUOp = 0;
-            controls->MemWrite = 2;
-            controls->ALUSrc = 2;
-            controls->RegWrite = 2;
+            controls->MemWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
             return 0;
         case 2: //jump, 0b000010
             controls->RegDst = 0;
@@ -177,7 +177,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
-        case 131: //load word, 0b100011
+        case 0b100011: //load word, 0b100011
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -188,7 +188,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
-        case 163: //store word, 0b101011
+        case 0b101011: //store word, 0b101011
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -292,6 +292,11 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
-
+    if(Jump == 1) {
+        *PC = jsec;
+    }
+    else if(Branch == 1) {
+        *PC = Branch;
+    }
 }
 
