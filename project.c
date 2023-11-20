@@ -9,7 +9,6 @@
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
     unsigned invA = ~A + 1;
-    printf("A = %d\ninvA = %d\n", A, invA);
     unsigned invB = ~B + 1;
     //~X + 1 will work no matter if X is actually positive or negative
 
@@ -100,34 +99,35 @@ int instruction_decode(unsigned op,struct_controls *controls)
 
     switch(op) {
         case 0: //R-type instruction, 000000
+            // filled from r-type pdf
             controls->RegDst = 1;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b000; // double check this
             controls->MemWrite = 0;
-            controls->ALUSrc = 1;
+            controls->ALUSrc = 0;
             controls->RegWrite = 1;
             return 0;
         case 2: //jump, 0b000010
-            controls->RegDst = 0;
-            controls->Jump = 0;
+            controls->RegDst = 2;
+            controls->Jump = 1;
             controls->Branch = 0;
-            controls->MemRead = 0;
-            controls->MemtoReg = 0;
+            controls->MemRead = 1;
+            controls->MemtoReg = 2;
             controls->ALUOp = 0;
             controls->MemWrite = 0;
-            controls->ALUSrc = 0;
+            controls->ALUSrc = 2;
             controls->RegWrite = 0;
             return 0;
-        case 4: //branch eq, 0b000100
-            controls->RegDst = 0;
+        case 4: //branch on equal, 0b000100
+            controls->RegDst = 2;
             controls->Jump = 0;
-            controls->Branch = 0;
+            controls->Branch = 1;
             controls->MemRead = 0;
-            controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->MemtoReg = 2;
+            controls->ALUOp = 0b001; // needs to be subtraction for comparison
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
@@ -165,6 +165,17 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
+        case 12: //and immediate, 0b001100
+            controls->RegDst = 0;
+            controls->Jump = 0;
+            controls->Branch = 0;
+            controls->MemRead = 0;
+            controls->MemtoReg = 0;
+            controls->ALUOp = 0;
+            controls->MemWrite = 0;
+            controls->ALUSrc = 0;
+            controls->RegWrite = 0;
+            return 0;
         case 15: //load upper immediate, 0b001111
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -176,32 +187,32 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
-        case 0b100011: //load word, 0b100011
+        case 0b100101: //load word, 0b100011
             controls->RegDst = 0;
+            controls->Jump = 0;
+            controls->Branch = 0;
+            controls->MemRead = 1;
+            controls->MemtoReg = 1;
+            controls->ALUOp = 0b000;
+            controls->MemWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
+            return 0;
+        case 0b101011: //store word, 0b101011
+            controls->RegDst = 2;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
             controls->ALUOp = 0b000;
-            controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
-            return 0;
-        case 0b101011: //store word, 0b101011
-            controls->RegDst = 0;
-            controls->Jump = 0;
-            controls->Branch = 0;
-            controls->MemRead = 0;
-            controls->MemtoReg = 0;
-            controls->ALUOp = 0;
-            controls->MemWrite = 0;
-            controls->ALUSrc = 0;
+            controls->MemWrite = 1;
+            controls->ALUSrc = 1;
             controls->RegWrite = 0;
             return 0;
         default:
             return 1;
     }
-
+    return 1;
 
 }
 
