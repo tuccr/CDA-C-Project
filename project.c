@@ -277,16 +277,18 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
     // if MemRead = 1, check word alignment and read from memory
     // IF NOT WORD ALIGNED, RETURN HALT
     
-    //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
-    if(data2 % 4 != 0 || ALUresult % 4 != 0) {
-        return 1;
-    }
+    // data2 should be register output
+    // memdata should be data read from memory
 
-    if(MemWrite == 1 && MemRead == 0) {
+    // See in datapath when and how it could be receiving an ALUresult or data2
+
+    //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
+
+    if(MemWrite == 1 && MemRead == 0 && *memdata % 4 != 0) { //replace memdata with real input
         // store word into Mem from data2 or ALUresult or maybe memdata?
         return 0;
     }
-    if(MemWrite == 0 && MemRead == 1) {
+    else if(MemWrite == 0 && MemRead == 1 && *memdata % 4 != 0) { //replace memdata with real input
         // load word into data2 or memdata(?) from Mem
         return 0;
     }
