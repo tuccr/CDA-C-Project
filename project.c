@@ -210,8 +210,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
 /* 5 Points */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-    // does not need to be word aligned, doesn't return a halt
-    *data1 = Reg[r1 >> 4];
+    // does not need to be word aligned, doesn't return a halt status/value
+    *data1 = Reg[r1 >> 4]; // r1 >> 4 is equivalent to r1 * 8 or r1 * sizeof(word)
     *data2 = Reg[r2 >> 4];
 }
 
@@ -266,7 +266,6 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
                 return 1;
         }
     }
-
     ALU(data1, data2, ALUOp, ALUresult, Zero);
     return 0;
 }
@@ -278,6 +277,24 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
     // if MemWrite = 1, check word alignment and write into memory
     // if MemRead = 1, check word alignment and read from memory
     // IF NOT WORD ALIGNED, RETURN HALT
+    
+    //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
+    if(data2 % 4 != 0) {
+        return 1;
+    }
+
+    if(MemWrite == 1 && MemRead == 0) {
+        // store word into Mem from data2 or ALUresult or maybe memdata?
+        return 0;
+    }
+    if(MemWrite == 0 && MemRead == 1) {
+        // load word into data2 or memdata(?) from Mem
+        return 0;
+    }
+    else {
+        return 1;
+    }
+
 }
 
 
@@ -286,16 +303,24 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
     // look at control signals and write as necessary
+
+    // if RegWrite == 1 and MemtoReg == 1, then data is coming from memory
+    // if RegWrite == 1, and MemtoReg == 0, then data is coming from ALU_result
+    // if RegWrite == 1, then place write data into register specified by RegDst
+
 }
 
 /* PC update */
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
+    *PC = *PC + 4; // ALWAYS do this step first, no matter what
+
     if(Jump == 1) {
-        *PC = jsec;
+        *PC = (jsec << 2);
+        *PC = *PC;//& 0b11110000000000000000000000000000; check ProjectDetails.pptx to see what I mean
     }
-    else if(Branch == 1) {
+    else if(Zero == 1) {
         *PC = Branch;
     }
 }
