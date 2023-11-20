@@ -55,7 +55,6 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
     // check is PC is divisible by 4 then divide by 4 (PC >> 2) to get the actual location (Mem is an array of words)
-    // spimcore.c -> #define MEM(addr) MEM[(addr >> 2)] should do this
     // can halt
 
     if(PC % 4 != 0) {
@@ -211,8 +210,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
     // does not need to be word aligned, doesn't return a halt status/value
-    *data1 = Reg[r1 >> 4]; // r1 >> 4 is equivalent to r1 * 8 or r1 * sizeof(word)
-    *data2 = Reg[r2 >> 4];
+    *data1 = Reg[r1 >> 2]; // r1 >> 4 is equivalent to r1 * 8 or r1 * sizeof(word)
+    *data2 = Reg[r2 >> 2];
 }
 
 
@@ -279,7 +278,7 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
     // IF NOT WORD ALIGNED, RETURN HALT
     
     //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
-    if(data2 % 4 != 0) {
+    if(data2 % 4 != 0 || ALUresult % 4 != 0) {
         return 1;
     }
 
@@ -317,8 +316,7 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
     *PC = *PC + 4; // ALWAYS do this step first, no matter what
 
     if(Jump == 1) {
-        *PC = (jsec << 2);
-        *PC = *PC;//& 0b11110000000000000000000000000000; check ProjectDetails.pptx to see what I mean
+        *PC = (*PC & 0b11110000000000000000000000000000) | (jsec << 2); // see ProjectDetails.pptx
     }
     else if(Zero == 1) {
         *PC = Branch;
