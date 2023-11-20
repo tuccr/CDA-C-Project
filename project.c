@@ -284,12 +284,15 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 
     //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
 
-    if(MemWrite == 1 && MemRead == 0 && *memdata % 4 != 0) { //replace memdata with real input
+    if(MemWrite == 1 && MemRead == 0 && (ALUresult % 4 != 0)) { 
         // store word into Mem from data2 or ALUresult or maybe memdata?
+        MEM(ALUresult) = data2;
+        *memdata = data2;
         return 0;
     }
-    else if(MemWrite == 0 && MemRead == 1 && *memdata % 4 != 0) { //replace memdata with real input
+    else if(MemWrite == 0 && MemRead == 1 && (ALUresult % 4 != 0)) { 
         // load word into data2 or memdata(?) from Mem
+        *memdata = MEM(ALUresult);
         return 0;
     }
     else {
@@ -306,8 +309,25 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
     // look at control signals and write as necessary
 
     // if RegWrite == 1 and MemtoReg == 1, then data is coming from memory
-    // if RegWrite == 1, and MemtoReg == 0, then data is coming from ALU_result
+    // if RegWrite == 1, and MemtoReg == 0, then data is coming from ALUresult
     // if RegWrite == 1, then place write data into register specified by RegDst
+
+    if(RegWrite == 1 && MemtoReg == 1) {
+        if(RegDst == 1) {
+            Reg[r3 >> 2] = memdata;
+        }
+        else if(RegDst == 0) {
+            Reg[r2 >> 2] = memdata;
+        }
+    }
+    if(RegWrite == 1 && MemtoReg == 0) {
+        if(RegDst == 1) {
+            Reg[r3 >> 2] = ALUresult;
+        }
+        if(RegDst == 0) {
+            Reg[r2 >> 2] = ALUresult;
+        }
+    }
 
 }
 
