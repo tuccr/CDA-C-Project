@@ -55,7 +55,7 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
     // check is PC is divisible by 4 then divide by 4 (PC >> 2) to get the actual location (Mem is an array of words)
     // can halt
-
+    
     if(PC % 4 != 0) {
         return 1;
     }
@@ -114,9 +114,9 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->RegDst = 2;
             controls->Jump = 1;
             controls->Branch = 0;
-            controls->MemRead = 1;
+            controls->MemRead = 0;
             controls->MemtoReg = 2;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b000;
             controls->MemWrite = 0;
             controls->ALUSrc = 2;
             controls->RegWrite = 0;
@@ -127,7 +127,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 1;
             controls->MemRead = 0;
             controls->MemtoReg = 2;
-            controls->ALUOp = 0b001; // needs to be subtraction for comparison
+            controls->ALUOp = 0b001; // needs to be subtraction for comparison then and gate between Branch and Zero
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
@@ -138,10 +138,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b000;
             controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
             return 0;
         case 10: //set on less than immediate, 0b001010
             controls->RegDst = 0;
@@ -149,10 +149,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b010; //set on less than signed
             controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
             return 0;
         case 11: //set on less than immediate unsigned, 0b001011
             controls->RegDst = 0;
@@ -160,10 +160,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b011;
             controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
             return 0;
         case 12: //and immediate, 0b001100
             controls->RegDst = 0;
@@ -171,10 +171,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0;
+            controls->ALUOp = 0b100;
             controls->MemWrite = 0;
-            controls->ALUSrc = 0;
-            controls->RegWrite = 0;
+            controls->ALUSrc = 1;
+            controls->RegWrite = 1;
             return 0;
         case 15: //load upper immediate, 0b001111
             controls->RegDst = 0;
@@ -212,7 +212,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
         default:
             return 1;
     }
-    return 1;
+    return 0;
 
 }
 
@@ -249,7 +249,7 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
     // call ALU() and determine if halt
 
     if(ALUOp == 2 && ALUSrc == 2) {
-        if(extended_value > (65536 >> 2)) {
+        if(extended_value > (65536)) {
             return 1;
         }
     }
