@@ -40,6 +40,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
             *ALUresult = ~A;
             break;
     }
+    printf("ALUResult = %d\n", *ALUresult);
 }
 
 
@@ -58,6 +59,7 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
     }
     else {
         *instruction = Mem[PC >> 2]; // if using vscode, hover over MEM(PC) and you'll see what's defined in spimcore.c
+        printf("IF Pass\n");
         return 0;
     }
 }
@@ -77,7 +79,7 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1, uns
     *r1 = (instruction & 0b00000011111000000000000000000000) >> 21;
     *r2 = (instruction & 0b00000000000111110000000000000000) >> 16;
     *r3 = (instruction & 0b00000000000000001111100000000000) >> 11;
-    *offset = (instruction & 0b000000000000000000000011111000000) >> 6;
+    *offset = (instruction & 0b000000000000000000000011111111111) >> 0;
     *funct = (instruction & 0b00000000000000000000000000111111) >> 0;
     *jsec = (instruction & 0b00000011111111111111111111111111) >> 0;
 }
@@ -106,7 +108,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 1;
-            return 0;
             break;
         case 2: //jump, 0b000010
             controls->RegDst = 2;
@@ -118,7 +119,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 2;
             controls->RegWrite = 0;
-            return 0;
             break;
         case 4: //branch on equal, 0b000100
             controls->RegDst = 2;
@@ -126,11 +126,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 1;
             controls->MemRead = 0;
             controls->MemtoReg = 2;
-            controls->ALUOp = 0b001; // needs to be subtraction for comparison then and gate between Branch and Zero
+            controls->ALUOp = 0b001; //needs to be subtraction for comparison then and gate between Branch and Zero
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
-            return 0;
             break;
         case 8: //add immediate, 0b001000
             controls->RegDst = 0;
@@ -138,11 +137,11 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0b000;
+            controls->ALUOp = 0b000; // add
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
-            return 0;
+            printf("addi\n");
             break;
         case 10: //set on less than immediate, 0b001010
             controls->RegDst = 0;
@@ -154,7 +153,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
-            return 0;
             break;
         case 11: //set on less than immediate unsigned, 0b001011
             controls->RegDst = 0;
@@ -166,7 +164,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
-            return 0;
             break;
         case 12: //and immediate, 0b001100
             controls->RegDst = 0;
@@ -178,7 +175,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
-            return 0;
             break;
         case 15: //load upper immediate, 0b001111
             controls->RegDst = 0;
@@ -190,9 +186,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
-            return 0;
             break;
-        case 0b100101: //load word, 0b100011
+        case 0b100011: //load word, 0b100011
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -202,7 +197,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
-            return 0;
             break;
         case 0b101011: //store word, 0b101011
             controls->RegDst = 2;
@@ -214,14 +208,13 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->MemWrite = 1;
             controls->ALUSrc = 1;
             controls->RegWrite = 0;
-            return 0;
             break;
         default:
+            printf("Halt in ID\n");
             return 1;
-            break;
     }
-    return 0;
-
+    printf("ID Pass\n");
+    return 0; // switch has hit and control signals have been assigned
 }
 
 /* Read Register */
@@ -229,8 +222,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
     // does not need to be word aligned, doesn't return a halt status/value
-    *data1 = Reg[r1 >> 2]; // r1 >> 4 is equivalent to r1 * 8 or r1 * sizeof(word)
-    *data2 = Reg[r2 >> 2];
+    *data1 = Reg[r1]; // r1 << 3 is equivalent to r1 * 8 or r1 * sizeof(word)
+    *data2 = Reg[r2];
 }
 
 
@@ -260,11 +253,12 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
         return 1;
     }
 
-    if(ALUSrc == 0) {
-        data2 = extended_value;
+    if(ALUSrc == 0 && ALUOp == 0b111) {
+        printf("funct: %d\n", funct);
         switch(funct) {
             case 0b100000:
                 ALUOp = 0b000;//add
+                printf("r-type add...\n");
                 break;
             case 0b100010:
                 ALUOp = 0b001;//subtract
@@ -278,9 +272,22 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
             case 0b100111:
                 ALUOp = 0b111;//not
                 break;
+            case 42:
+                ALUOp = 0b010;//slt
+                break;
+            case 43:
+                ALUOp = 0b011;//sltu
+                break;
+            default:
+                return 1;
         }
     }
+
+    if(ALUSrc == 1) {
+        data2 = extended_value;
+    }
     ALU(data1, data2, ALUOp, ALUresult, Zero);
+    printf("ALU_operations Pass\n");
     return 0;
 }
 
@@ -301,17 +308,23 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
         // store word into Mem at ALUresult->data2
         Mem[ALUresult >> 2] = data2;
         *memdata = data2;
+        printf("rw_memory Pass\n");
         return 0;
     }
     else if((MemWrite == 0 && MemRead == 1) && (ALUresult % 4 == 0)) { 
         // load word into memdata from Mem
         *memdata = Mem[ALUresult >> 2];
+        printf("rw_memory Pass\n");
         return 0;
     }
-    else if((MemWrite == MemRead) || (ALUresult % 4 != 0)) {
+    else if((MemWrite == 0 && MemRead == 1) && (ALUresult % 4 != 0)) {
+        return 1;
+    }
+    else if((MemWrite == 1 && MemRead == 0) && (ALUresult % 4 != 0)) {
         return 1;
     }
     else {
+        printf("rw_memory Pass (noAction)\n");
         return 0;
     }
 
@@ -330,18 +343,22 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 
     if(RegWrite == 1 && MemtoReg == 1) {
         if(RegDst == 1) {
-            Reg[r3 >> 2] = memdata;
+            Reg[r3] = memdata;
+            printf("Option 1:\nmemdata: %d\nRegData: %d\n", memdata, Reg[r3]);
         }
         else if(RegDst == 0) {
-            Reg[r2 >> 2] = memdata;
+            Reg[r2] = memdata;
+            printf("Option 2:\nmemdata: %d\nRegData: %d\n", memdata, Reg[r2]);
         }
     }
     if(RegWrite == 1 && MemtoReg == 0) {
-        if(RegDst == 1) {
-            Reg[r3 >> 2] = ALUresult;
-        }
         if(RegDst == 0) {
-            Reg[r2 >> 2] = ALUresult;
+            Reg[r2] = ALUresult;
+            printf("Option 3:\nmemdata: %d\nRegData: %d\n", memdata, Reg[r2]);
+        }
+        else if(RegDst == 1) {
+            Reg[r3] = ALUresult;
+            printf("Option 4:\nmemdata: %d\nRegData: %d\n", memdata, Reg[r3]);
         }
     }
 
@@ -351,11 +368,14 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
+    printf("PC = %d\n", *PC);
     *PC = *PC + 4; // ALWAYS do this step first, no matter what
 
     if(Jump == 1) {
         *PC = (*PC & 0b11110000000000000000000000000000) | (jsec << 2); // see ProjectDetails.pptx
     }
+    printf("PC' = %d\n", *PC);
+
     //else if(Zero == 1) {
     //    *PC = Branch;
     //}
