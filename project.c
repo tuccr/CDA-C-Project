@@ -39,9 +39,6 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
         case 0b111: //NOT A; 111
             *ALUresult = ~A;
             break;
-        default:
-            *ALUresult = 0;
-            break;
     }
 }
 
@@ -60,7 +57,7 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
         return 1;
     }
     else {
-        *instruction = MEM(PC); // if using vscode, hover over MEM(PC) and you'll see what's defined in spimcore.c
+        *instruction = Mem[PC >> 2]; // if using vscode, hover over MEM(PC) and you'll see what's defined in spimcore.c
         return 0;
     }
 }
@@ -105,11 +102,12 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0b000; // double check this
+            controls->ALUOp = 0b111; // from ProjectFAQ.pdf
             controls->MemWrite = 0;
             controls->ALUSrc = 0;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 2: //jump, 0b000010
             controls->RegDst = 2;
             controls->Jump = 1;
@@ -121,6 +119,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 2;
             controls->RegWrite = 0;
             return 0;
+            break;
         case 4: //branch on equal, 0b000100
             controls->RegDst = 2;
             controls->Jump = 0;
@@ -132,6 +131,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
+            break;
         case 8: //add immediate, 0b001000
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -143,6 +143,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 10: //set on less than immediate, 0b001010
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -154,6 +155,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 11: //set on less than immediate unsigned, 0b001011
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -165,6 +167,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 12: //and immediate, 0b001100
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -176,6 +179,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 15: //load upper immediate, 0b001111
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -187,6 +191,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             return 0;
+            break;
         case 0b100101: //load word, 0b100011
             controls->RegDst = 0;
             controls->Jump = 0;
@@ -198,6 +203,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             return 0;
+            break;
         case 0b101011: //store word, 0b101011
             controls->RegDst = 2;
             controls->Jump = 0;
@@ -209,8 +215,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 0;
             return 0;
+            break;
         default:
             return 1;
+            break;
     }
     return 0;
 
@@ -249,12 +257,10 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
     // call ALU() and determine if halt
 
     if(ALUOp == 2 && ALUSrc == 2) {
-        if(extended_value > (65536)) {
-            return 1;
-        }
+        return 1;
     }
 
-    if(ALUSrc == 1) {
+    if(ALUSrc == 0) {
         data2 = extended_value;
         switch(funct) {
             case 0b100000:
@@ -272,8 +278,6 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
             case 0b100111:
                 ALUOp = 0b111;//not
                 break;
-            default:
-                return 1;
         }
     }
     ALU(data1, data2, ALUOp, ALUresult, Zero);
@@ -288,26 +292,27 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
     // if MemRead = 1, check word alignment and read from memory
     // IF NOT WORD ALIGNED, RETURN HALT
     
-    // data2 should be register output
+    // data2 should be register input
     // memdata should be data read from memory
-
-    // See in datapath when and how it could be receiving an ALUresult or data2
 
     //IF STATEMENT FOR WORD ALIGNED INTO HERE, RETURN 1 IF HALT OTHERWISE CONTINUE
 
-    if(MemWrite == 1 && MemRead == 0 && (ALUresult % 4 != 0)) { 
-        // store word into Mem from data2 or ALUresult or maybe memdata?
-        MEM(ALUresult) = data2;
+    if((MemWrite == 1 && MemRead == 0) && (ALUresult % 4 == 0)) { 
+        // store word into Mem at ALUresult->data2
+        Mem[ALUresult >> 2] = data2;
         *memdata = data2;
         return 0;
     }
-    else if(MemWrite == 0 && MemRead == 1 && (ALUresult % 4 != 0)) { 
-        // load word into data2 or memdata(?) from Mem
-        *memdata = MEM(ALUresult);
+    else if((MemWrite == 0 && MemRead == 1) && (ALUresult % 4 == 0)) { 
+        // load word into memdata from Mem
+        *memdata = Mem[ALUresult >> 2];
         return 0;
     }
-    else {
+    else if((MemWrite == MemRead) || (ALUresult % 4 != 0)) {
         return 1;
+    }
+    else {
+        return 0;
     }
 
 }
@@ -351,8 +356,8 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
     if(Jump == 1) {
         *PC = (*PC & 0b11110000000000000000000000000000) | (jsec << 2); // see ProjectDetails.pptx
     }
-    else if(Zero == 1) {
-        *PC = Branch;
-    }
+    //else if(Zero == 1) {
+    //    *PC = Branch;
+    //}
 }
 
