@@ -226,7 +226,7 @@ void sign_extend(unsigned offset,unsigned *extended_value)
     // offset is input and extended_value is output
 
     if(((1 << 15) & offset) == (1 << 15)) {
-        *extended_value = offset + 0b11111111111111110000000000000000;
+        *extended_value = offset | 0b11111111111111110000000000000000;
     }
     else {
         *extended_value = offset;
