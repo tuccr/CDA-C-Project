@@ -1,45 +1,47 @@
 #include "spimcore.h"
 
-// Tucker Carroll
-// Gianni Dragassakis
-// CDA3103C C Project
-
+/* 
+    Group 1
+    Tucker Carroll, Gianni Dragassakis
+    CDA3103C
+    C Project
+*/
 
 /* ALU */
 /* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
-    unsigned invA = ~A + 1;
-    unsigned invB = ~B + 1;
     //~X + 1 will work no matter if X is actually positive or negative
 
     switch(ALUControl) {
-        case 0b000: //add; 000
+        case 0b000: //add
             *ALUresult = A + B;
             break;
-        case 0b001: //subtract; 001
-            *ALUresult = A + invB;
+        case 0b001: //subtract
+            B = ~B + 1;
+            *ALUresult = A + B;
             break;
-        case 0b010: //if A < B, Z = 1, otherwise, Z = 0; 010
-            *ALUresult = (((A + invB) & 0b1000000000000000) != 0);
+        case 0b010: //if A < B, Z = 1, otherwise, Z = 0
+            B = ~B + 1;
+            *ALUresult = (((A + B) & 0b1000000000000000) != 0);
             break;
-        case 0b011: //slt unsigned; 011
+        case 0b011: //slt unsigned
             *ALUresult = (A < B);
             break;
-        case 0b100: //A AND B; 100
+        case 0b100: //A AND B
             *ALUresult = (A & B);
             break;
-        case 0b101: //A OR B; 101
+        case 0b101: //A OR B
             *ALUresult = (A | B);
             break;
-        case 0b110: //shift B left by 16 bits; 110
+        case 0b110: //shift B left by 16 bits
             *ALUresult = (B << 16);
             break;
         case 0b111: //NOT A; 111
             *ALUresult = ~A;
             break;
         default:
-            return;
+            return; // invalid ALUControl signal
     }
     *Zero = (*ALUresult == 0);
 }
@@ -49,7 +51,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-    // check is PC is divisible by 4 then divide by 4 (PC >> 2) to get the actual location (Mem is an array of words)
+    // check if PC is divisible by 4 (word alignment) then divide by 4 (PC >> 2) to get the actual location
     // can halt
     
     if(PC % 4 != 0) {
@@ -85,13 +87,14 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1, uns
 /* 15 Points */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
-    // taking opcode then setting all vales of controls to whatever required
-    // 0 or 1, 2 means don't care
-    // return 1 if halt, 0 otherwise
-
+    // Taking opcode then setting all vales of controls to whatever required
+    // Signals 0 or 1
+        // 2 means don't care
+        // ALUOp don't care is add (0b000)
+        // ALUOp r-type flag is NOT (0b111)
 
     switch(op) {
-        case 0: //R-type instruction, 000000
+        case 0b000000: //R-type instruction
             controls->RegDst = 1;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -102,7 +105,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 1;
             break;
-        case 2: //jump, 0b000010
+        case 0b000010: //jump
             controls->RegDst = 2;
             controls->Jump = 1;
             controls->Branch = 0;
@@ -113,7 +116,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 2;
             controls->RegWrite = 0;
             break;
-        case 4: //branch on equal, 0b000100
+        case 0b000100: //branch on equal
             controls->RegDst = 2;
             controls->Jump = 0;
             controls->Branch = 1;
@@ -124,7 +127,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 0;
             controls->RegWrite = 0;
             break;
-        case 8: //add immediate, 0b001000
+        case 0b001000: //add immediate
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -135,29 +138,29 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 10: //set on less than immediate, 0b001010
+        case 0b001010: //set on less than immediate
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0b010; //set on less than signed
+            controls->ALUOp = 0b010; // set on less than signed
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 11: //set on less than immediate unsigned, 0b001011
+        case 0b001011: //set on less than immediate unsigned
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
             controls->MemRead = 0;
             controls->MemtoReg = 0;
-            controls->ALUOp = 0b011; //set on less than unsigned
+            controls->ALUOp = 0b011; // set on less than unsigned
             controls->MemWrite = 0;
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 12: //AND immediate, 0b001100
+        case 0b001100: //AND immediate
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -168,7 +171,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 0b001111: //load upper immediate, 0b001111
+        case 0b001111: //load upper immediate
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -179,7 +182,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 0b100011: //load word, 0b100011
+        case 0b100011: //load word
             controls->RegDst = 0;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -190,7 +193,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
             controls->ALUSrc = 1;
             controls->RegWrite = 1;
             break;
-        case 0b101011: //store word, 0b101011
+        case 0b101011: //store word
             controls->RegDst = 2;
             controls->Jump = 0;
             controls->Branch = 0;
@@ -234,9 +237,8 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 /* 10 Points */
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
-    // look at ALUOp and determine if R-type or not
-        // if yes, decode funct
-    // call ALU() and determine if halt
+    // decode funct if needed and halt if invalid inputs
+    
     if(ALUOp < 0 || ALUSrc < 0 || ALUSrc > 2) {
         return 1;
     }
@@ -258,10 +260,10 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
             case 0b100111:
                 ALUOp = 0b111;//not
                 break;
-            case 42:
+            case 0b00101010:
                 ALUOp = 0b010;//slt
                 break;
-            case 43:
+            case 0b00101011:
                 ALUOp = 0b011;//sltu
                 break;
             default:
@@ -287,17 +289,19 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
     // data2 should be register input
     // memdata should be data read from memory    
 
+    // store data2 into Mem at ALUresult
     if((MemWrite && !MemRead) && (ALUresult % 4 == 0)) { 
-        // store data2 into Mem at ALUresult
         Mem[ALUresult >> 2] = data2;
         *memdata = data2;
         return 0;
     }
+
+    // load word into memdata from Mem
     if((!MemWrite && MemRead) && (ALUresult % 4 == 0)) {
-        // load word into memdata from Mem
         *memdata = Mem[ALUresult >> 2];
         return 0;
     }
+
     if(((!MemWrite && MemRead) || (MemWrite && !MemRead)) && (ALUresult % 4 != 0)) {
         return 1;
     }
@@ -314,10 +318,10 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 {
     // look at control signals and write as necessary
 
-    // if RegWrite == 1 and MemtoReg == 1, then data is coming from memory
-    // if RegWrite == 1, and MemtoReg == 0, then data is coming from ALUresult
     // if RegWrite == 1, then place write data into register specified by RegDst
-
+        // if MemtoReg == 1, then data is coming from memory
+        // if MemtoReg == 0, then data is coming from ALUresult
+    
     // load
     if(RegWrite && MemtoReg == 1) {
         if(RegDst == 1) {
@@ -345,11 +349,13 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
 {
     *PC = *PC + 4; // ALWAYS do this step first, no matter what
 
+    // beq
     if(Branch && Zero) {
         extended_value = (extended_value << 2);
         ALU(*PC, extended_value, 0b000, PC, &Zero);
     }
 
+    // jump
     if(Jump) {
         *PC = (*PC & 0b11110000000000000000000000000000) | (jsec << 2); 
     }
