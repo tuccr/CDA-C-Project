@@ -81,7 +81,7 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1, uns
     *r1 = (instruction & 0b00000011111000000000000000000000) >> 21;
     *r2 = (instruction & 0b00000000000111110000000000000000) >> 16;
     *r3 = (instruction & 0b00000000000000001111100000000000) >> 11;
-    *offset = (instruction & 0b000000000000000000000111111111111) >> 0;
+    *offset = (instruction & 0b000000000000000001111111111111111) >> 0;
     *funct = (instruction & 0b00000000000000000000000000111111) >> 0;
     *jsec = (instruction & 0b00000011111111111111111111111111) >> 0;
 }
@@ -324,10 +324,8 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
         printf("rw_memory Pass\n");
         return 0;
     }
-    else if((!MemWrite && MemRead) && (ALUresult % 4 != 0)) {
-        return 1;
-    }
-    else if((MemWrite && !MemRead) && (ALUresult % 4 != 0)) {
+    else if(((!MemWrite && MemRead) || (MemWrite && !MemRead)) && (ALUresult % 4 != 0)) {
+        printf("rw_memory Halt (word alignment)\n");
         return 1;
     }
     else {
